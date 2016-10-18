@@ -22,7 +22,7 @@ cbenchの結果は次のようになる．
 ![cbench.rbの解析結果](./cbenh.PNG)
 
 ##結論
-この結果を見ると，使用していないにもかかわらずmutexによる負担が大きいことが少なくとも分かった．これはつまり，ハンドラによって呼び出される関数はバックグラウンドで自動的にマルチスレッド処理を行っており，その際に自動的に排他的処理であるmutexを機能させていることから，ボトルネックの１つになっているのであると判断した．
+この結果を見ると，Mutex#synchronizeと記述されている部分に，使用していないにもかかわらずmutexによる負担が大きいことが少なくとも分かった．これはつまり，ハンドラによって呼び出される関数はバックグラウンドで自動的にマルチスレッド処理を行っており，その際に自動的に排他的処理であるmutexを機能させていることから，ボトルネックの１つになっているのであると判断した．
 
 しかし今回の対象プログラムでは，スレッドごと（流入パケットごと）の共有資源が存在しないため，mutexを行う必要がない．よってこのボトルネックは不必要なものであり，最適化するべきであることがわかる．
 
@@ -31,42 +31,40 @@ cbenchの結果は次のようになる．
 プログラムは次のようにした．
 
 ##cbench_multi.rbのプログラムソース
-
-'''ruby
-# A simple openflow controller for benchmarking.
-require "ruby-prof"
-class Cbench < Trema::Controller
-  def start(_args)
-    logger.info "#{name} started."
-    @work_queue = Queue.new
-    100.times{start_worker_thread}
-  end
-  def packet_in(datapath_id, packet_in)
-    @work_queue.push [datapath_id,packet_in]
-=begin
-    send_flow_mod_add(
-      datapath_id,
-      match: ExactMatch.new(packet_in),
-      buffer_id: packet_in.buffer_id,
-      actions: SendOutPort.new(packet_in.in_port + 1)
-    )
-=end
-  end
-  def start_worker_thread
-    Thread.new do
-      loop do
-        datapath_id, packet_in = @work_queue.pop
-	send_flow_mod_add(
-	  datapath_id,
-	  match:ExactMatch.new(packet_in),
-	  buffer_id: packet_in.buffer_id,
-	  actions: SendOutPort.new(packet_in.in_port+1)
-	)
-      end
-    end
-  end
-end
-'''
+	# A simple openflow controller for benchmarking.
+	require "ruby-prof"
+	class Cbench < Trema::Controller
+	  def start(_args)
+	    logger.info "#{name} started."
+	    @work_queue = Queue.new
+	    100.times{start_worker_thread}
+	  end
+	  def packet_in(datapath_id, packet_in)
+	    @work_queue.push [datapath_id,packet_in]
+	=begin
+	    send_flow_mod_add(
+	      datapath_id,
+	      match: ExactMatch.new(packet_in),
+	      buffer_id: packet_in.buffer_id,
+	      actions: SendOutPort.new(packet_in.in_port + 1)
+	    )
+	=end
+	  end
+	  def start_worker_thread
+	    Thread.new do
+	      loop do
+	        datapath_id, packet_in = @work_queue.pop
+		send_flow_mod_add(
+		  datapath_id,
+		  match:ExactMatch.new(packet_in),
+		  buffer_id: packet_in.buffer_id,
+		  actions: SendOutPort.new(packet_in.in_port+1)
+		)
+	      end
+	    end
+	  end
+	end
+	
 前節と同じように実行した．
 
 ##cbench_multi.rbのcbench結果
