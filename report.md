@@ -75,9 +75,10 @@ cbenchの結果は次のようになる．
 1   switches: fmods/sec:  156   total = 0.015574 per ms
 1   switches: fmods/sec:  161   total = 0.016063 per ms
 '''
+上記のように，２倍程度に高速化されている．cbenchを使わない場合はどちらも５倍程度の速さであるが，cbench_multiのほうが速いことに変わりはなかった．
 
-
+##cbench_multi.rbの解析結果
 ![cbench_multi.rbの解析結果](./cbench_multi.PNG)
-
+ruby-profによる解析結果はこのようになり，mutexの文字列は見当たらず，逆にスレッドがsleepをするほどになったので，ボトルネックは別の部分になったと言える．
 
 
